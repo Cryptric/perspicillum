@@ -1,0 +1,41 @@
+# Build directories
+build/
+cmake_build/
+out/
+dist/
+
+# Compiled objects
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.user
+*.pro.user
+
+# Temporary files
+*.tmp
+*.bak
+*.old
+core
+
+# Generated files
+compile_commands.json

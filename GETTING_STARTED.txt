@@ -1,0 +1,297 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    perspicillum - Getting Started                          ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 1: BUILD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+cd /home/irz/Documents/perspicillum
+mkdir -p build && cd build
+cmake ..
+make -j4
+
+STEP 2: VERIFY (RUN TESTS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+cd /home/irz/Documents/perspicillum/build
+make test
+
+STEP 3: TRY EXAMPLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+./examples/quick_plot       # Quick express API demo
+./examples/figure_api       # Multi-subplot OOP demo
+./examples/data_types       # Eigen vector demo
+
+STEP 4: CREATE YOUR OWN PLOT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create my_plot.cpp:
+
+    #include <perspicillum.hpp>
+    #include <vector>
+    #include <cmath>
+
+    int main() {
+      std::vector<double> x, y;
+      for (double t = 0; t < 6.28; t += 0.1) {
+        x.push_back(t);
+        y.push_back(std::sin(t));
+      }
+
+      perspicillum::plot(x, y)
+        .title("My First Plot")
+        .name("sin(x)")
+        .color(0.2f, 0.6f, 1.0f)
+        .show();
+    }
+
+Compile:
+  g++ -std=c++20 my_plot.cpp \
+    -L /home/irz/Documents/perspicillum/build \
+    -I /home/irz/Documents/perspicillum/include \
+    -l perspicillum -l glfw -l GL -o my_plot
+
+Run:
+  ./my_plot
+
+STEP 5: USE IN YOUR PROJECT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Add to your CMakeLists.txt:
+
+    # At the top with other add_subdirectory calls
+    add_subdirectory(perspicillum)
+
+    # In your executable/library
+    add_executable(my_app main.cpp)
+    target_link_libraries(my_app perspicillum)
+    set_property(TARGET my_app PROPERTY CXX_STANDARD 20)
+
+Then in your code:
+
+    #include <perspicillum.hpp>
+
+    int main() {
+      perspicillum::plot(x, y).show();
+    }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MINIMAL EXAMPLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Example 1: Express API (Quick Plot)
+────────────────────────────────────
+
+  #include <perspicillum.hpp>
+
+  int main() {
+    std::vector<double> x = {1, 2, 3, 4, 5};
+    std::vector<double> y = {1, 4, 9, 16, 25};
+    
+    perspicillum::plot(x, y).show();
+  }
+
+Example 2: Styled Express
+──────────────────────────
+
+  perspicillum::plot(x, y)
+    .title("Quadratic")
+    .name("y=x²")
+    .color(1.0f, 0.0f, 0.0f)  // Red
+    .width(3.0f)
+    .show();
+
+Example 3: Scatter Plot
+───────────────────────
+
+  perspicillum::scatter(x, y)
+    .markersize(8)
+    .color(0.0f, 1.0f, 0.0f)  // Green
+    .show();
+
+Example 4: Bar Chart
+──────────────────────
+
+  perspicillum::bar(x, y)
+    .title("Sales Data")
+    .show();
+
+Example 5: Multiple Subplots
+────────────────────────────
+
+  perspicillum::Figure fig(2, 2);
+
+  fig.subplot(1, 1).add_plot(
+    std::make_unique<perspicillum::LinePlot>(
+      perspicillum::make_data(x1),
+      perspicillum::make_data(y1)
+    )
+  ).style().set_color(1.0f, 0.0f, 0.0f);
+
+  fig.subplot(1, 2).add_plot(
+    std::make_unique<perspicillum::ScatterPlot>(
+      perspicillum::make_data(x2),
+      perspicillum::make_data(y2)
+    )
+  ).style().set_color(0.0f, 1.0f, 0.0f);
+
+  fig.set_title("Multi-Plot Figure");
+  fig.show();
+
+Example 6: Eigen Vectors
+─────────────────────────
+
+  #include <Eigen/Dense>
+  #include <perspicillum.hpp>
+
+  int main() {
+    Eigen::VectorXd x = Eigen::VectorXd::LinSpaced(50, 0, 2*M_PI);
+    Eigen::VectorXd y = x.array().sin();
+
+    perspicillum::plot(x, y)
+      .title("Eigen Vector Plot")
+      .show();
+  }
+
+Example 7: GUI Integration
+──────────────────────────
+
+  perspicillum::Figure fig;
+  fig.add_scatter(x, y);
+
+  // In your ImGui loop
+  ImGui::Begin("Plot Window");
+  fig.render();  // No window, renders in context
+  ImGui::End();
+
+Example 8: Zero-Copy with Span
+──────────────────────────────
+
+  std::vector<double> data = {1, 2, 3, 4, 5};
+  std::span<const double> view(data);  // No copy!
+
+  perspicillum::plot(view, other_data).show();
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COLORS (RGB, 0-1 range)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Red:        (1.0f, 0.0f, 0.0f)
+  Green:      (0.0f, 1.0f, 0.0f)
+  Blue:       (0.0f, 0.0f, 1.0f)
+  Yellow:     (1.0f, 1.0f, 0.0f)
+  Magenta:    (1.0f, 0.0f, 1.0f)
+  Cyan:       (0.0f, 1.0f, 1.0f)
+  Orange:     (1.0f, 0.6f, 0.0f)
+  Purple:     (0.8f, 0.0f, 0.8f)
+  Pink:       (1.0f, 0.2f, 0.5f)
+  Gray:       (0.5f, 0.5f, 0.5f)
+  Light Blue: (0.2f, 0.6f, 1.0f)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMMON METHODS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PlotExpression (return from plot/scatter/bar):
+  .title(string)              Set window title
+  .name(string)               Set legend name
+  .color(r, g, b, a)          Set color (0-1 range, a optional)
+  .width(float)               Set line width in pixels
+  .markersize(int)            Set marker size in pixels
+  .show()                     Display in window
+
+Figure:
+  Figure()                    Single subplot
+  Figure(rows, cols)          Create grid
+  .subplot(r, c)              Get subplot (1-indexed)
+  .add_line(x, y)             Add line plot
+  .add_scatter(x, y)          Add scatter plot
+  .add_bar(x, y)              Add bar plot
+  .set_title(title)           Set figure title
+  .set_size(w, h)             Set window size
+  .show()                     Display
+  .render()                   Render (no window)
+
+PlotStyle (result of .style()):
+  .set_color(r, g, b, a)      Set color
+  .set_name(label)            Set label
+  .set_width(w)               Set line width
+  .set_markersize(s)          Set marker size
+  .set_showlegend(bool)       Show in legend
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Build fails:
+  ✓ Ensure C++20: cmake .. -DCMAKE_CXX_STANDARD=20
+  ✓ Install deps: apt-get install libglfw3-dev libgl1-mesa-dev libeigen3-dev
+  ✓ Clean build: rm -rf build && mkdir build && cd build
+
+Compilation errors:
+  ✓ Use -std=c++20 flag
+  ✓ Include perspicillum.hpp, not individual headers
+  ✓ Check all libraries are linked: -lglfw -lGL -lm
+
+Plot doesn't display:
+  ✓ Check X11 is available (DISPLAY env var set)
+  ✓ Verify OpenGL: glxinfo
+  ✓ Call .show() at end
+  ✓ Check data isn't empty or NaN
+
+Integration issues:
+  ✓ Link library: target_link_libraries(app perspicillum)
+  ✓ Add include: target_include_directories(app PRIVATE perspicillum/include)
+  ✓ Set C++20: set_property(TARGET app PROPERTY CXX_STANDARD 20)
+
+Performance:
+  ✓ Use std::span for zero-copy access
+  ✓ Pass large vectors with std::move
+  ✓ Build in Release: cmake .. -DCMAKE_BUILD_TYPE=Release
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FILES & STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Documentation:
+  README.md         - Full documentation
+  QUICKSTART.md     - Quick reference
+  GETTING_STARTED.txt - This file
+
+Source:
+  include/perspicillum.hpp - Main header (include this)
+  include/perspicillum/ - API headers
+  src/ - Implementation
+
+Examples:
+  examples/quick_plot.cpp - Express API
+  examples/figure_api.cpp - Subplots
+  examples/data_types.cpp - Eigen support
+
+Tests:
+  tests/data_container_test.cpp - Data type tests
+
+Build:
+  build/libperspicillum.a - Static library
+  build/examples/* - Example executables
+  build/tests/* - Test executables
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NEXT STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Read README.md for comprehensive API documentation
+2. Look at examples/ for working code
+3. Run tests to verify installation
+4. Try creating your first plot
+5. Integrate into your project
+6. Refer to QUICKSTART.md for quick lookups
+
+Happy plotting! 📊

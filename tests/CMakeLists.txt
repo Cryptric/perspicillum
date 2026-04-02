@@ -1,0 +1,3 @@
+add_executable(data_container_test data_container_test.cpp)
+target_link_libraries(data_container_test perspicillum)
+add_test(NAME DataContainerTest COMMAND data_container_test)
