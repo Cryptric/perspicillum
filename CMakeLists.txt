@@ -29,8 +29,15 @@ add_library(imgui INTERFACE)
 add_library(implot INTERFACE)
 
 # Set up include paths
-target_include_directories(imgui INTERFACE "${EXTERNAL_DIR}/imgui")
-target_include_directories(implot INTERFACE "${EXTERNAL_DIR}/implot" "${EXTERNAL_DIR}/imgui")
+target_include_directories(imgui INTERFACE
+  $<BUILD_INTERFACE:${EXTERNAL_DIR}/imgui>
+  $<INSTALL_INTERFACE:include>
+)
+target_include_directories(implot INTERFACE
+  $<BUILD_INTERFACE:${EXTERNAL_DIR}/implot>
+  $<BUILD_INTERFACE:${EXTERNAL_DIR}/imgui>
+  $<INSTALL_INTERFACE:include>
+)
 
 # ImGui implementation files (needed to be compiled with the main library)
 set(IMGUI_SOURCES
@@ -60,13 +67,14 @@ add_library(perspicillum STATIC
 
 target_include_directories(perspicillum
   PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src"
-    "${EXTERNAL_DIR}/imgui"
-    "${EXTERNAL_DIR}/imgui/backends"
-    "${EXTERNAL_DIR}/implot"
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${EXTERNAL_DIR}/imgui>
+    $<BUILD_INTERFACE:${EXTERNAL_DIR}/imgui/backends>
+    $<BUILD_INTERFACE:${EXTERNAL_DIR}/implot>
+    $<INSTALL_INTERFACE:include>
   PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
 )
 
 target_link_libraries(perspicillum
@@ -92,3 +100,48 @@ if(PERSPICILLUM_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+set(INSTALL_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/perspicillum")
+
+# Install library and interface targets
+install(TARGETS perspicillum imgui implot
+  EXPORT perspicillumTargets
+  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+  INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+)
+
+# Install headers
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+# Export the targets to a script
+install(EXPORT perspicillumTargets
+  FILE perspicillumTargets.cmake
+  NAMESPACE perspicillum::
+  DESTINATION "${INSTALL_CMAKE_DIR}"
+)
+
+# Create and install the Config file
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/perspicillumConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/perspicillumConfig.cmake"
+  INSTALL_DESTINATION "${INSTALL_CMAKE_DIR}"
+  NO_SET_AND_CHECK_MACRO
+  NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/perspicillumConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/perspicillumConfig.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/perspicillumConfigVersion.cmake"
+  DESTINATION "${INSTALL_CMAKE_DIR}"
+)
