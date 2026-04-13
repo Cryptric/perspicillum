@@ -10,3 +10,7 @@
 #include "perspicillum/figure.hpp"
 #include "perspicillum/window_manager.hpp"
 #include "perspicillum/express.hpp"
+
+// Live (non-blocking) plotting
+#include "perspicillum/live_plots.hpp"
+#include "perspicillum/live_figure.hpp"

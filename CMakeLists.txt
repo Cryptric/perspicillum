@@ -14,6 +14,7 @@ option(PERSPICILLUM_WITH_EIGEN "Include Eigen support" ON)
 find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(glm REQUIRED)
+find_package(Threads REQUIRED)
 find_package(PkgConfig QUIET)
 
 if(PERSPICILLUM_WITH_EIGEN)
@@ -61,6 +62,8 @@ add_library(perspicillum STATIC
   src/backends/imgui_backend.cpp
   src/backends/implot_adapter.cpp
   src/core/figure.cpp
+  src/live/live_plots.cpp
+  src/live/live_figure.cpp
   ${IMGUI_SOURCES}
   ${IMPLOT_SOURCES}
 )
@@ -84,6 +87,7 @@ target_link_libraries(perspicillum
     glm::glm
     imgui
     implot
+    Threads::Threads
 )
 
 if(PERSPICILLUM_WITH_EIGEN)
