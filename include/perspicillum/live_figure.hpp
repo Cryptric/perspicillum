@@ -2,24 +2,30 @@
 
 // Live plotting support for perspicillum.
 //
-// LiveFigure opens a window in a background render thread so that show() does
-// not block the caller.  All GLFW / ImGui / ImPlot / OpenGL calls are
-// confined to that thread — this is safe on Linux (X11/Wayland).  On macOS,
-// GLFW requires window operations on the main thread, which conflicts with
-// the non-blocking design; macOS is therefore not supported by this module.
+// LiveFigure forks a dedicated child process that owns the entire
+// GLFW / ImGui / ImPlot / OpenGL lifecycle.  show() returns immediately;
+// the calling process keeps its main thread free.
+//
+// Plot data is exchanged via a POSIX shared-memory region so that
+// update() / append() calls in the parent are visible to the child's
+// render loop with proper synchronisation (process-shared pthread mutexes).
 //
 // Thread-safety contract
 // ----------------------
 //   • Add plots (add_scatter, add_line, add_bar) BEFORE calling show().
-//     The plot list is not protected after the render thread starts.
-//   • After show(), call update() on individual live plots from any thread.
-//   • close() / wait() / the destructor are safe to call from any thread.
+//     The plot list is not protected after show() forks.
+//   • After show(), call update() / append() on individual live plots from
+//     any thread in the parent process.
+//   • close() / wait() / the destructor are safe to call from any thread
+//     in the parent process.
+//   • macOS is not supported (GLFW requires window operations on the main
+//     thread, which conflicts with the forked-process design on that OS).
 
 #include <atomic>
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <thread>
+#include <sys/types.h>
 #include <vector>
 
 #include "live_plots.hpp"
@@ -71,10 +77,12 @@ public:
   std::string& title() { return title_; }
   const std::string& title() const { return title_; }
 
-  /// Render all plots in this subplot (called from the render thread).
+  /// Render all plots in this subplot (called from the child process).
   void render();
 
 private:
+  friend class LiveFigure;
+
   std::vector<std::shared_ptr<LivePlotBase>> plots_;
   std::string title_;
   int rows_, cols_, index_;
@@ -84,7 +92,8 @@ private:
 // LiveFigure
 // ---------------------------------------------------------------------------
 
-/// A figure that renders in a background thread so that show() is non-blocking.
+/// A figure that renders in a forked child process so that show() is
+/// non-blocking and the GUI stack is owned by a dedicated process.
 ///
 /// Typical usage:
 /// @code
@@ -167,25 +176,24 @@ public:
 
   // --- lifecycle ---
 
-  /// Open the window in a background render thread.  Returns immediately.
+  /// Fork a child process that owns the window.  Returns immediately.
   /// Must not be called more than once per instance.
   void show();
 
-  /// Signal the render thread to stop.  Safe to call from any thread.
-  void close() { running_.store(false); }
+  /// Signal the child process to close its window.
+  /// Safe to call from any thread in the parent.
+  void close();
 
-  /// Block until the render thread has exited.
-  void wait() {
-    if (render_thread_.joinable())
-      render_thread_.join();
-  }
+  /// Block until the child process has exited and clean up shared memory.
+  void wait();
 
-  /// Returns true while the render thread is alive.
-  bool is_open() const { return running_.load(); }
+  /// Returns true while the child process is alive.
+  bool is_open() const;
 
 private:
-  void render_loop();
-  void render_frame();
+  void render_loop();   // entry point for the child process
+  void render_frame();  // called from render_loop() each frame
+  void cleanup_shm() noexcept;
 
   void ensure_not_running(const char* method) const {
     if (running_.load())
@@ -199,8 +207,13 @@ private:
   int width_{1200}, height_{800};
   std::string title_;
 
-  std::thread render_thread_;
-  std::atomic<bool> running_{false};
+  // Process management (valid after show()).
+  mutable pid_t child_pid_ = -1;
+  mutable std::atomic<bool> running_{false};
+
+  // Shared-memory region (valid after show(), in both parent and child).
+  void* shm_region_ = nullptr;   // mmap'd pointer to detail::ShmRegion
+  std::size_t shm_size_ = 0;
 };
 
 }  // namespace perspicillum

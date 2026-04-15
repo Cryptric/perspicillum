@@ -12,14 +12,23 @@
 namespace perspicillum {
 
 /// Base class for live (updatable) plots.
-/// render() is called exclusively from the LiveFigure render thread.
-/// update() may be called safely from any thread.
+/// render() is called exclusively from the LiveFigure child process.
+/// update() / append() may be called safely from the parent process after show().
 class LivePlotBase {
 public:
   virtual ~LivePlotBase() = default;
   virtual void render() = 0;
   virtual PlotStyle& style() = 0;
   virtual const PlotStyle& style() const = 0;
+
+  // Internal: called by LiveFigure::show() to bind this plot to a slot inside
+  // the shared-memory region before the child process is forked.  Copies the
+  // current x/y data into the slot and clears the local vectors.
+  // NOT part of the public API.
+  virtual void bind_shm(void* slot) = 0;
+
+protected:
+  void* shm_slot_ = nullptr;  // non-null after bind_shm(); points into ShmRegion
 };
 
 // ---------------------------------------------------------------------------
@@ -56,13 +65,10 @@ public:
 #endif
 
   /// Append a single point. Safe to call from any thread.
-  void append(double x, double y) {
-    std::lock_guard lock(mutex_);
-    x_.push_back(x);
-    y_.push_back(y);
-  }
+  void append(double x, double y);
 
   void render() override;
+  void bind_shm(void* slot) override;
   PlotStyle& style() override { return style_; }
   const PlotStyle& style() const override { return style_; }
 
@@ -119,13 +125,10 @@ public:
 #endif
 
   /// Append a single point. Safe to call from any thread.
-  void append(double x, double y) {
-    std::lock_guard lock(mutex_);
-    x_.push_back(x);
-    y_.push_back(y);
-  }
+  void append(double x, double y);
 
   void render() override;
+  void bind_shm(void* slot) override;
   PlotStyle& style() override { return style_; }
   const PlotStyle& style() const override { return style_; }
 
@@ -182,13 +185,10 @@ public:
 #endif
 
   /// Append a single point. Safe to call from any thread.
-  void append(double x, double y) {
-    std::lock_guard lock(mutex_);
-    x_.push_back(x);
-    y_.push_back(y);
-  }
+  void append(double x, double y);
 
   void render() override;
+  void bind_shm(void* slot) override;
   PlotStyle& style() override { return style_; }
   const PlotStyle& style() const override { return style_; }
 

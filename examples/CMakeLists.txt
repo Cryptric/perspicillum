@@ -6,3 +6,6 @@ target_link_libraries(figure_api perspicillum)
 
 add_executable(data_types data_types.cpp)
 target_link_libraries(data_types perspicillum)
+
+add_executable(live_example live_example.cpp)
+target_link_libraries(live_example perspicillum)
