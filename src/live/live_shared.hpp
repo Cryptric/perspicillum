@@ -14,7 +14,7 @@ static_assert(std::atomic<int32_t>::is_always_lock_free,
               "perspicillum live module requires lock-free int32 atomics");
 
 // Per-figure tuning knobs.
-static constexpr int kShmMaxPlots  = 16;
+static constexpr int kShmMaxPlots  = 32;
 static constexpr int kShmMaxPoints = 32768;  // ~256 KB x/y per plot
 
 // ---------------------------------------------------------------------------

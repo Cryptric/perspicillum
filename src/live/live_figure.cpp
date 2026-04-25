@@ -32,6 +32,12 @@ void LiveSubplot::render() {
           title_.empty() ? "##live_plot" : title_.c_str(),
           ImVec2(-1, -1),
           ImPlotFlags_None)) {
+    if (x_range_.set)
+      ImPlot::SetupAxisLimits(ImAxis_X1, x_range_.lo, x_range_.hi,
+                              x_range_.locked ? ImPlotCond_Always : ImPlotCond_Once);
+    if (y_range_.set)
+      ImPlot::SetupAxisLimits(ImAxis_Y1, y_range_.lo, y_range_.hi,
+                              y_range_.locked ? ImPlotCond_Always : ImPlotCond_Once);
     for (auto& plot : plots_) {
       plot->render();
     }

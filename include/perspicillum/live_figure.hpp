@@ -38,6 +38,8 @@ namespace perspicillum {
 
 /// A subplot cell inside a LiveFigure.  Mirrors the Subplot API.
 class LiveSubplot {
+  struct AxisRange { double lo = 0.0, hi = 1.0; bool set = false; bool locked = false; };
+
 public:
   LiveSubplot(int rows, int cols, int index, const std::string& title = "")
       : title_(title), rows_(rows), cols_(cols), index_(index) {}
@@ -77,6 +79,44 @@ public:
   std::string& title() { return title_; }
   const std::string& title() const { return title_; }
 
+  /// Set the initial X axis view to [lo, hi].  Pan/zoom still works afterwards.
+  LiveSubplot& set_x_range(double lo, double hi) {
+    x_range_ = {lo, hi, true, false};
+    return *this;
+  }
+
+  /// Set the initial Y axis view to [lo, hi].  Pan/zoom still works afterwards.
+  LiveSubplot& set_y_range(double lo, double hi) {
+    y_range_ = {lo, hi, true, false};
+    return *this;
+  }
+
+  /// Set the initial view on both axes.  Pan/zoom still works afterwards.
+  LiveSubplot& set_range(double xlo, double xhi, double ylo, double yhi) {
+    x_range_ = {xlo, xhi, true, false};
+    y_range_ = {ylo, yhi, true, false};
+    return *this;
+  }
+
+  /// Lock the X axis to [lo, hi], overriding pan/zoom every frame.
+  LiveSubplot& lock_x_range(double lo, double hi) {
+    x_range_ = {lo, hi, true, true};
+    return *this;
+  }
+
+  /// Lock the Y axis to [lo, hi], overriding pan/zoom every frame.
+  LiveSubplot& lock_y_range(double lo, double hi) {
+    y_range_ = {lo, hi, true, true};
+    return *this;
+  }
+
+  /// Lock both axes, overriding pan/zoom every frame.
+  LiveSubplot& lock_range(double xlo, double xhi, double ylo, double yhi) {
+    x_range_ = {xlo, xhi, true, true};
+    y_range_ = {ylo, yhi, true, true};
+    return *this;
+  }
+
   /// Render all plots in this subplot (called from the child process).
   void render();
 
@@ -86,6 +126,7 @@ private:
   std::vector<std::shared_ptr<LivePlotBase>> plots_;
   std::string title_;
   int rows_, cols_, index_;
+  AxisRange x_range_, y_range_;
 };
 
 // ---------------------------------------------------------------------------
@@ -159,6 +200,19 @@ public:
                    const std::vector<double>& y = {}) {
     ensure_not_running("add_bar");
     return subplots_[0].add_bar(x, y);
+  }
+
+  // --- range helpers on the default (first) subplot ---
+
+  LiveFigure& set_x_range(double lo, double hi) { subplots_[0].set_x_range(lo, hi); return *this; }
+  LiveFigure& set_y_range(double lo, double hi) { subplots_[0].set_y_range(lo, hi); return *this; }
+  LiveFigure& set_range(double xlo, double xhi, double ylo, double yhi) {
+    subplots_[0].set_range(xlo, xhi, ylo, yhi); return *this;
+  }
+  LiveFigure& lock_x_range(double lo, double hi) { subplots_[0].lock_x_range(lo, hi); return *this; }
+  LiveFigure& lock_y_range(double lo, double hi) { subplots_[0].lock_y_range(lo, hi); return *this; }
+  LiveFigure& lock_range(double xlo, double xhi, double ylo, double yhi) {
+    subplots_[0].lock_range(xlo, xhi, ylo, yhi); return *this;
   }
 
   // --- configuration (call before show) ---

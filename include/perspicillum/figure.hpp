@@ -11,9 +11,12 @@ namespace perspicillum {
 /// Represents a subplot within a figure
 class Subplot {
 private:
+  struct AxisRange { double lo = 0.0, hi = 1.0; bool set = false; bool locked = false; };
+
   std::vector<std::unique_ptr<PlotBase>> plots_;
   std::string title_;
   int rows_, cols_, index_;
+  AxisRange x_range_, y_range_;
 
 public:
   Subplot(int rows, int cols, int index, const std::string& title = "")
@@ -46,6 +49,44 @@ public:
     auto* ptr = plot_ptr.get();
     plots_.push_back(std::move(plot_ptr));
     return *ptr;
+  }
+
+  /// Set the initial X axis view to [lo, hi].  Pan/zoom still works afterwards.
+  Subplot& set_x_range(double lo, double hi) {
+    x_range_ = {lo, hi, true, false};
+    return *this;
+  }
+
+  /// Set the initial Y axis view to [lo, hi].  Pan/zoom still works afterwards.
+  Subplot& set_y_range(double lo, double hi) {
+    y_range_ = {lo, hi, true, false};
+    return *this;
+  }
+
+  /// Set the initial view on both axes.  Pan/zoom still works afterwards.
+  Subplot& set_range(double xlo, double xhi, double ylo, double yhi) {
+    x_range_ = {xlo, xhi, true, false};
+    y_range_ = {ylo, yhi, true, false};
+    return *this;
+  }
+
+  /// Lock the X axis to [lo, hi], overriding pan/zoom every frame.
+  Subplot& lock_x_range(double lo, double hi) {
+    x_range_ = {lo, hi, true, true};
+    return *this;
+  }
+
+  /// Lock the Y axis to [lo, hi], overriding pan/zoom every frame.
+  Subplot& lock_y_range(double lo, double hi) {
+    y_range_ = {lo, hi, true, true};
+    return *this;
+  }
+
+  /// Lock both axes, overriding pan/zoom every frame.
+  Subplot& lock_range(double xlo, double xhi, double ylo, double yhi) {
+    x_range_ = {xlo, xhi, true, true};
+    y_range_ = {ylo, yhi, true, true};
+    return *this;
   }
 
   /// Render all plots in this subplot
@@ -106,6 +147,18 @@ public:
     auto* ptr = plot.get();
     subplots_[0].add_plot(std::move(plot));
     return *ptr;
+  }
+
+  /// Range helpers on the default (first) subplot.
+  Figure& set_x_range(double lo, double hi) { subplots_[0].set_x_range(lo, hi); return *this; }
+  Figure& set_y_range(double lo, double hi) { subplots_[0].set_y_range(lo, hi); return *this; }
+  Figure& set_range(double xlo, double xhi, double ylo, double yhi) {
+    subplots_[0].set_range(xlo, xhi, ylo, yhi); return *this;
+  }
+  Figure& lock_x_range(double lo, double hi) { subplots_[0].lock_x_range(lo, hi); return *this; }
+  Figure& lock_y_range(double lo, double hi) { subplots_[0].lock_y_range(lo, hi); return *this; }
+  Figure& lock_range(double xlo, double xhi, double ylo, double yhi) {
+    subplots_[0].lock_range(xlo, xhi, ylo, yhi); return *this;
   }
 
   /// Set figure title
