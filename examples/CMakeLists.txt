@@ -9,3 +9,9 @@ target_link_libraries(data_types perspicillum)
 
 add_executable(live_example live_example.cpp)
 target_link_libraries(live_example perspicillum)
+
+add_executable(heatmap heatmap.cpp)
+target_link_libraries(heatmap perspicillum)
+
+add_executable(heatmap_large heatmap_large.cpp)
+target_link_libraries(heatmap_large perspicillum)

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <span>
 #include <string>
 #include "plot_base.hpp"
 #include "plots.hpp"
@@ -140,6 +141,33 @@ public:
     subplots_[0].add_plot(std::move(plot));
     return *ptr;
   }
+
+  /// Add a heatmap to the default subplot (row-major flat values)
+  HeatmapPlot& add_heatmap(std::vector<double> values, int rows, int cols) {
+    auto plot = std::make_unique<HeatmapPlot>(std::move(values), rows, cols);
+    auto* ptr = plot.get();
+    subplots_[0].add_plot(std::move(plot));
+    return *ptr;
+  }
+
+  /// Add a heatmap to the default subplot (span)
+  HeatmapPlot& add_heatmap(std::span<const double> values, int rows, int cols) {
+    auto plot = std::make_unique<HeatmapPlot>(values, rows, cols);
+    auto* ptr = plot.get();
+    subplots_[0].add_plot(std::move(plot));
+    return *ptr;
+  }
+
+#ifdef PERSPICILLUM_WITH_EIGEN
+  /// Add a heatmap to the default subplot from an Eigen matrix
+  template <typename Derived>
+  HeatmapPlot& add_heatmap(const Eigen::MatrixBase<Derived>& mat) {
+    auto plot = std::make_unique<HeatmapPlot>(mat);
+    auto* ptr = plot.get();
+    subplots_[0].add_plot(std::move(plot));
+    return *ptr;
+  }
+#endif
 
   /// Add a bar plot to the default subplot
   BarPlot& add_bar(std::unique_ptr<DataContainer> x, std::unique_ptr<DataContainer> y) {

@@ -5,6 +5,19 @@
 
 namespace perspicillum {
 
+enum class Colormap {
+  Viridis,
+  Plasma,
+  Hot,
+  Cool,
+  Jet,
+  Greys,
+  RdBu,
+  BrBG,
+  PiYG,
+  Spectral,
+};
+
 /// Plotly-style attributes for plots
 struct PlotStyle {
   glm::vec4 color{1.0f, 1.0f, 1.0f, 1.0f};

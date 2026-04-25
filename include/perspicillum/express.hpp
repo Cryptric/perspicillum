@@ -119,4 +119,81 @@ inline PlotExpression bar(const Eigen::MatrixBase<DerivedX>& x,
 }
 #endif
 
+// ============================================================================
+// HeatmapExpression
+// ============================================================================
+
+/// Express-style quick heatmap builder
+class HeatmapExpression {
+private:
+  std::unique_ptr<Figure> figure_;
+  HeatmapPlot* plot_;
+
+public:
+  HeatmapExpression(std::unique_ptr<Figure> fig, HeatmapPlot* plot)
+      : figure_(std::move(fig)), plot_(plot) {}
+
+  HeatmapExpression& name(const std::string& n) {
+    plot_->style().set_name(n);
+    return *this;
+  }
+
+  HeatmapExpression& title(const std::string& t) {
+    figure_->set_title(t);
+    return *this;
+  }
+
+  HeatmapExpression& colormap(Colormap cm) {
+    plot_->set_colormap(cm);
+    return *this;
+  }
+
+  HeatmapExpression& scale(double min, double max) {
+    plot_->set_scale(min, max);
+    return *this;
+  }
+
+  HeatmapExpression& show_labels(bool show = true) {
+    plot_->set_show_labels(show);
+    return *this;
+  }
+
+  void show() {
+    figure_->show();
+  }
+
+  Figure* get_figure() { return figure_.get(); }
+};
+
+// ============================================================================
+// heatmap() express functions
+// ============================================================================
+
+inline HeatmapExpression heatmap(std::vector<double> values, int rows, int cols) {
+  auto fig = std::make_unique<Figure>();
+  auto hm = std::make_unique<HeatmapPlot>(std::move(values), rows, cols);
+  auto* ptr = hm.get();
+  fig->add_plot(std::move(hm));
+  return HeatmapExpression(std::move(fig), ptr);
+}
+
+inline HeatmapExpression heatmap(std::span<const double> values, int rows, int cols) {
+  auto fig = std::make_unique<Figure>();
+  auto hm = std::make_unique<HeatmapPlot>(values, rows, cols);
+  auto* ptr = hm.get();
+  fig->add_plot(std::move(hm));
+  return HeatmapExpression(std::move(fig), ptr);
+}
+
+#ifdef PERSPICILLUM_WITH_EIGEN
+template <typename Derived>
+inline HeatmapExpression heatmap(const Eigen::MatrixBase<Derived>& mat) {
+  auto fig = std::make_unique<Figure>();
+  auto hm = std::make_unique<HeatmapPlot>(mat);
+  auto* ptr = hm.get();
+  fig->add_plot(std::move(hm));
+  return HeatmapExpression(std::move(fig), ptr);
+}
+#endif
+
 }  // namespace perspicillum
